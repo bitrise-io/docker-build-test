@@ -1,0 +1,65 @@
+format_version: 1.1.0
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs: []
+
+trigger_map:
+- pattern: "*"
+  is_pull_request_allowed: true
+  workflow: test
+
+workflows:
+  test:
+    steps:
+    - script:
+        title: Sys info
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+            set -x
+
+            df -h
+            free -m
+    - script:
+        title: Docker infos
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+            set -x
+
+            docker --version
+            docker info
+
+    - script:
+        title: Docker build
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+            set -x
+
+            docker build -t "bitrisetest/docker-build-test:$BITRISE_BUILD_NUMBER" .
+            env_test_res=$(docker run --rm "bitrisetest/docker-build-test:$BITRISE_BUILD_NUMBER" cat ./env_test.txt)
+            if [[ "$env_test_res" != "4" ]] ; then
+              echo " [!] Env Test failed!"
+              exit 1
+            fi
+            echo " * Env Test [OK]"
+
+    - script:
+        title: Docker push
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+
+            echo "=> Docker login..."
+            docker login -e $DOCKER_LOGIN_EMAIL -u $DOCKER_LOGIN_USERNAME -p $DOCKER_LOGIN_PASSWORD
+            echo "=> [OK]"
+
+            set -x
+
+            docker push "bitrisetest/docker-build-test:$BITRISE_BUILD_NUMBER"

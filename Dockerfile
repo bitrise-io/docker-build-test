@@ -1,0 +1,5 @@
+FROM ubuntu:14.04
+
+ENV BITRISE_DOCKER_TEST 4
+
+RUN echo "$BITRISE_DOCKER_TEST" > env_test.txt
